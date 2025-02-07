@@ -2276,7 +2276,7 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
 u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
 {
     // //If the node is sink, do not be a slave
-    if (nodeType == DeviceType::SINK) return 0;
+    if (packet.payload.deviceType == DeviceType::SINK) return 0;
 
     //If the packet is too old, filter it out
     if (GS->appTimerDs - packet.receivedTimeDs > MAX_JOIN_ME_PACKET_AGE_DS) return 0;
@@ -3039,6 +3039,22 @@ void Node::PrintStatus(void) const
     trace("Node %s (nodeId: %u) vers: %u, NodeKey: %02X:%02X:....:%02X:%02X" EOL EOL, RamConfig->GetSerialNumber(), configuration.nodeId, GS->config.GetFruityMeshVersion(),
             RamConfig->GetNodeKey()[0], RamConfig->GetNodeKey()[1], RamConfig->GetNodeKey()[14], RamConfig->GetNodeKey()[15]);
     
+    if (nodeType == DeviceType::SINK)
+        trace("this node is Sink" EOL);
+    else if ( nodeType == DeviceType::STATIC)
+        trace("this node is Static " EOL);
+    else if ( nodeType == DeviceType::ROAMING)
+        trace("this node is Roaming " EOL);
+    else if ( nodeType == DeviceType::PRIO)
+        trace("this node is Prio " EOL);
+    else if ( nodeType == DeviceType::ASSET)
+        trace("this node is Asset " EOL);
+    else if ( nodeType == DeviceType::LEAF)
+        trace("this node is Normal " EOL); 
+    else
+        trace("this node is Invalid " EOL);
+    
+        
     u16 meshMinConnectionIntervalValue = Conf::GetInstance().meshMinConnectionInterval * 1.25;
     u16 meshMaxConnectionIntervalValue = Conf::GetInstance().meshMaxConnectionInterval * 1.25;
     u16 meshScanIntervalHighValue = Conf::GetInstance().meshScanIntervalHigh * 0.625; 
@@ -3046,6 +3062,7 @@ void Node::PrintStatus(void) const
     u16 meshScanIntervalLowValue = Conf::GetInstance().meshScanIntervalLow * 0.625;
     u16 meshScanWindowLowValue = Conf::GetInstance().meshScanWindowLow * 0.625;
     u16 connectionEventValue = GS->connectionEventvalue * 1.25;
+
     trace("meshMinConnectionIntervalValue : %u ms" EOL, meshMinConnectionIntervalValue);
     trace("meshMaxConnectionIntervalValue : %u ms" EOL, meshMaxConnectionIntervalValue);
     trace("meshScanIntervalHighValue : %u ms" EOL, meshScanIntervalHighValue);

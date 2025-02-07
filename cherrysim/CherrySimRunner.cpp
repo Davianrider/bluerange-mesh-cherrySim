@@ -298,7 +298,7 @@ SimConfiguration CherrySimRunner::CreateDefaultSimConfiguration()
     simConfig.terminalId = 1; //Enter -1 to disable, 0 for all nodes, or a specific id
 
     simConfig.nodeConfigName.insert({ "prod_sink_nrf52", 1});
-    simConfig.nodeConfigName.insert({ "prod_mesh_nrf52", 5 });
+    simConfig.nodeConfigName.insert({ "prod_mesh_nrf52", 9 });
 
     simConfig.simOtherDelay = 100000; // Enter 1 - 100000 to send sim_other message only each ... simulation steps, this increases the speed significantly
     simConfig.playDelay = 0; //Allows us to view the simulation slower than simulated, is added after each step
