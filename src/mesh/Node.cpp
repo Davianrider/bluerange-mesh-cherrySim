@@ -2195,25 +2195,25 @@ joinMeBufferPacket* Node::DetermineBestClusterAsMaster()
 //Connect to big clusters but big clusters must connect nodes that are not able 
 u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
 {
-    switch (configuration.nodeId){
-        case 1 :
-            if (packet.payload.sender != 2)  return 0;
-            break;
-        case 2 :
-            if (packet.payload.sender != 3 && packet.payload.sender != 4) return 0; 
-            break;
-        case 3 :
-            if (packet.payload.sender != 5 && packet.payload.sender != 6) return 0; 
-            break;
-        case 4 :
-        case 5 :
-        case 6 :
-            return 0;
-            break;
-        default :
-        break; 
+    //  switch (configuration.nodeId){
+    //     case 1 :
+    //         if (packet.payload.sender != 2)  return 0;
+    //         break;
+    //     case 2 :
+    //         if (packet.payload.sender != 3 && packet.payload.sender != 4) return 0; 
+    //         break;
+    //     case 3 :
+    //         if (packet.payload.sender != 5 && packet.payload.sender != 6) return 0; 
+    //         break;
+    //     case 4 :
+    //     case 5 :
+    //     case 6 :
+    //         return 0;
+    //         break;
+    //     default :
+    //     break; 
 
-    }
+    // }
 
     
     
@@ -2224,6 +2224,15 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     //if (packet.payload.sender != 3 && packet.payload.sender != 4) return 0;  
     //if (packet.payload.sender != 2)  return 0; 
     
+    
+    DeviceConfiguration config;
+    ErrorType err = FruityHal::GetDeviceConfiguration(config);
+    DeviceType deviceType;
+    if (err == ErrorType::SUCCESS)
+    deviceType = static_cast<DeviceType>(config.deviceType);
+    if (deviceType == DeviceType::SINK) goto calculate_score;
+
+    calculate_score:
     //If the packet is too old, filter it out
     if (GS->appTimerDs - packet.receivedTimeDs > MAX_JOIN_ME_PACKET_AGE_DS) return 0;
 
@@ -2298,8 +2307,19 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
 u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
 {
     // //If the node is sink, do not be a slave
-    if (packet.payload.deviceType == DeviceType::SINK) return 0;
+    //if (packet.payload.deviceType == DeviceType::SINK) return 0;
 
+
+    //if (packet.payload.deviceType == DeviceType::SINK) goto calculate_score;
+    
+    DeviceConfiguration config;
+    ErrorType err = FruityHal::GetDeviceConfiguration(config);
+    DeviceType deviceType;
+    if (err == ErrorType::SUCCESS)
+    deviceType = static_cast<DeviceType>(config.deviceType);
+    if (deviceType == DeviceType::SINK) return 0;
+
+    calculate_score:
     //If the packet is too old, filter it out
     if (GS->appTimerDs - packet.receivedTimeDs > MAX_JOIN_ME_PACKET_AGE_DS) return 0;
 
@@ -3061,17 +3081,24 @@ void Node::PrintStatus(void) const
     trace("Node %s (nodeId: %u) vers: %u, NodeKey: %02X:%02X:....:%02X:%02X" EOL EOL, RamConfig->GetSerialNumber(), configuration.nodeId, GS->config.GetFruityMeshVersion(),
             RamConfig->GetNodeKey()[0], RamConfig->GetNodeKey()[1], RamConfig->GetNodeKey()[14], RamConfig->GetNodeKey()[15]);
     
-    if (nodeType == DeviceType::SINK)
+    DeviceConfiguration config;
+    DeviceType deviceType;
+    ErrorType err = FruityHal::GetDeviceConfiguration(config);
+    if (err == ErrorType::SUCCESS)
+    deviceType = static_cast<DeviceType>(config.deviceType);
+    
+    
+    if (deviceType == DeviceType::SINK)
         trace("this node is Sink" EOL);
-    else if ( nodeType == DeviceType::STATIC)
+    else if ( deviceType == DeviceType::STATIC)
         trace("this node is Static " EOL);
-    else if ( nodeType == DeviceType::ROAMING)
+    else if ( deviceType == DeviceType::ROAMING)
         trace("this node is Roaming " EOL);
-    else if ( nodeType == DeviceType::PRIO)
+    else if ( deviceType == DeviceType::PRIO)
         trace("this node is Prio " EOL);
-    else if ( nodeType == DeviceType::ASSET)
+    else if ( deviceType == DeviceType::ASSET)
         trace("this node is Asset " EOL);
-    else if ( nodeType == DeviceType::LEAF)
+    else if ( deviceType == DeviceType::LEAF)
         trace("this node is Normal " EOL); 
     else
         trace("this node is Invalid " EOL);
