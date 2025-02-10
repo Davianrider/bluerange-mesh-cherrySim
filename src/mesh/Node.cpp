@@ -2195,6 +2195,28 @@ joinMeBufferPacket* Node::DetermineBestClusterAsMaster()
 //Connect to big clusters but big clusters must connect nodes that are not able 
 u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
 {
+    switch (configuration.nodeId){
+        case 1 :
+            if (packet.payload.sender != 2)  return 0;
+            break;
+        case 2 :
+            if (packet.payload.sender != 3 && packet.payload.sender != 4) return 0; 
+            break;
+        case 3 :
+            if (packet.payload.sender != 5 && packet.payload.sender != 6) return 0; 
+            break;
+        case 4 :
+        case 5 :
+        case 6 :
+            return 0;
+            break;
+        default :
+        break; 
+
+    }
+
+    
+    
     //if(1) return 0;
     //new test if slave node id > now node id return 0; 
     //if (packet.payload.sender < configuration.nodeId) return 0;    
