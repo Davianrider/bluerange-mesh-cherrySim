@@ -258,90 +258,119 @@ void CherrySim::PrepareSimulatedFeatureSets()
     //It defines all the featureset in the folder with the same name but in upper case.
     u32 featuresetOrderCounter = 0;
 #ifdef GITHUB_DEV_NRF52 //GITHUB_DEV_NRF52
+    std::cout << "GITHUB_DEV_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(github_dev_nrf52);
 #endif //GITHUB_DEV_NRF52
 #ifdef GITHUB_DEV_NRF52840 //GITHUB_DEV_NRF52840
+    std::cout << "GITHUB_DEV_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(github_dev_nrf52840);
 #endif //GITHUB_DEV_NRF52840
 #ifdef GITHUB_SINK_NRF52 // GITHUB_SINK_NRF52
+    std::cout << "GITHUB_SINK_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(github_sink_nrf52);
 #endif // GITHUB_SINK_NRF52
 #ifdef GITHUB_MESH_NRF52 //GITHUB_MESH_NRF52
+    std::cout << "GITHUB_MESH_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(github_mesh_nrf52);
 #endif //GITHUB_MESH_NRF52
-#ifdef GITHUB_SINK_USB_NRF52840 //GITHUB_SINK_USB_NRF52840    
+#ifdef GITHUB_SINK_USB_NRF52840 //GITHUB_SINK_USB_NRF52840  
+    std::cout << "GITHUB_SINK_USB_NRF52840 is enabled!" << std::endl;  
     AddSimulatedFeatureSet(github_sink_usb_nrf52840);
 #endif //GITHUB_SINK_USB_NRF52840
 #ifdef PROD_RUUVI_WEATHER_NRF52 //PROD_RUUVI_WEATHER_NRF52
+    std::cout << "PROD_RUUVI_WEATHER_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_ruuvi_weather_nrf52);
 #endif //PROD_RUUVI_WEATHER_NRF52
 #ifdef PROD_SINK_NRF52 //PROD_SINK_NRF52
+    std::cout << "PROD_SINK_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_sink_nrf52);
 #endif //PROD_SINK_NRF52
 #ifdef PROD_SINK_USB_NRF52840 //PROD_SINK_USB_NRF52840
+    std::cout << "PROD_SINK_USB_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_sink_usb_nrf52840);
 #endif //PROD_SINK_USB_NRF52840
 #ifdef DEV_NRF52 //DEV_NRF52
+    std::cout << "DEV_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(dev_nrf52);
 #endif //DEV_NRF52
 #ifdef DEV_NRF52840 //DEV_NRF52840
+    std::cout << "DEV_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(dev_nrf52840);
 #endif //DEV_NRF52840
 #ifdef PROD_MESH_NRF52 //PROD_MESH_NRF52
+    std::cout << "PROD_MESH_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_mesh_nrf52);
 #endif //PROD_MESH_NRF52
 #ifdef PROD_MESH_USB_NRF52840
+    std::cout << "PROD_MESH_USB_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_mesh_usb_nrf52840);
 #endif //PROD_MESH_USB_NRF52840
 #ifdef DEV_VSLOG //DEV_VSLOG
+    std::cout << "DEV_VSLOG is enabled!" << std::endl;
     AddSimulatedFeatureSet(dev_vslog);
 #endif //DEV_VSLOG
 #ifdef PROD_VS_NRF52 //PROD_VS_NRF52
+    std::cout << "PROD_VS_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_vs_nrf52);
 #endif
 #ifdef PROD_CLC_MESH_NRF52 //PROD_CLC_MESH_NRF52
+    std::cout << "PROD_CLC_MESH_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_clc_mesh_nrf52);
 #endif //PROD_CLC_MESH_NRF52
 #ifdef DEV_SIG_MESH //DEV_SIG_MESH
+    std::cout << "DEV_SIG_MESH is enabled!" << std::endl;
     AddSimulatedFeatureSet(dev_sig_mesh);
 #endif //DEV_SIG_MESH
 #ifdef DEV_AUTO_TEST_MASTER_NRF52 //DEV_AUTO_TEST_MASTER_NRF52
+    std::cout << "DEV_AUTO_TEST_MASTER_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(dev_auto_test_master_nrf52);
 #endif //DEV_AUTO_TEST_MASTER_NRF52
 #ifdef DEV_AUTO_TEST_MASTER_NRF52 //DEV_AUTO_TEST_SLAVE_NRF52
+    std::cout << "DEV_AUTO_TEST_SLAVE_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(dev_auto_test_slave_nrf52);
 #endif //DEV_AUTO_TEST_SLAVE_NRF52
 #ifdef PROD_VS_CONVERTER_NRF52 //PROD_VS_CONVERTER_NRF52
+    std::cout << "PROD_VS_CONVERTER_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_vs_converter_nrf52);
 #endif //PROD_VS_CONVERTER_NRF52
 #ifdef PROD_PCBRIDGE_NRF52 //PROD_PCBRIDGE_NRF52
+    std::cout << "PROD_PCBRIDGE_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_pcbridge_nrf52);
 #endif //PROD_PCBRIDGE_NRF52
 #ifdef PROD_WM_NRF52840 //PROD_WM_NRF52840
+    std::cout << "PROD_WM_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_wm_nrf52840);
 #endif //PROD_WM_NRF52840
 #ifdef PROD_BP_NRF52840 //PROD_BP_NRF52840
+    std::cout << "PROD_BP_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_bp_nrf52840);
 #endif //PROD_BP_NRF52840
 #ifdef PROD_EINK_NRF52840 //PROD_EINK_NRF52840
+    std::cout << "PROD_EINK_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_eink_nrf52840);
 #endif //PROD_EINK_NRF52840
 #ifdef PROD_MOD_NRF52832 //PROD_MOD_NRF52832
+    std::cout << "PROD_MOD_NRF52832 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_mod_nrf52832);
 #endif //PROD_MOD_NRF52832
 #ifdef DEV_MOD_NRF52840 //DEV_MOD_NRF52840
+    std::cout << "DEV_MOD_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(dev_mod_nrf52840);
 #endif //PROD_MOD_NRF52840
 #ifdef PROD_MOD_NRF52840 //PROD_MOD_NRF52840
+    std::cout << "PROD_MOD_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_mod_nrf52840);
 #endif //PROD_MOD_NRF52840
 #ifdef PROD_ST_NET_NRF52840 //PROD_ST_NET_NRF52840
+    std::cout << "PROD_ST_NET_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_st_net_nrf52840);
 #endif //PROD_ST_NET_NRF52840
 #ifdef PROD_EL_MO_NRF52832 //PROD_EL_MO_NRF52832
+    std::cout << "PROD_EL_MO_NRF52832 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_el_mo_nrf52832);
 #endif //PROD_EL_MO_NRF52832
 #ifdef PROD_EURO_UART_NRF52840 //PROD_EURO_UART_NRF52840
+    std::cout << "PROD_EURO_UART_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_euro_uart_nrf52840);
 #endif //PROD_EURO_UART_NRF52840
 
@@ -349,14 +378,24 @@ void CherrySim::PrepareSimulatedFeatureSets()
 //AssetNodes will be assigned the last nodeIds
 
 #ifdef PROD_ASSET_INS_NRF52840 //PROD_ASSET_INS_NRF52840
+    std::cout << "PROD_ASSET_INS_NRF52840 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_asset_ins_nrf52840);
 #endif //PROD_ASSET_INS_NRF52840
 #ifdef PROD_ASSET_NRF52 //PROD_ASSET_NRF52
+    std::cout << "PROD_ASSET_NRF52 is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_asset_nrf52);
 #endif //PROD_ASSET_NRF52
 #ifdef PROD_MESH_BR_PIR_ZERO
+    std::cout << "PROD_MESH_BR_PIR_ZERO is enabled!" << std::endl;
     AddSimulatedFeatureSet(prod_mesh_br_pir_zero);
 #endif //PROD_MESH_BR_PIR_ZERO
+
+std::cout << "Listing all registered feature sets: " << std::endl;
+for (const auto& pair : featuresetPointers) {
+    std::cout << "FeatureSet: " << pair.first << ", Order: " << pair.second.featuresetOrder << std::endl;
+}
+
+
 }
 #undef AddSimulatedFeatureSet
 
@@ -375,8 +414,11 @@ std::string CherrySim::RedirectFeatureset(const std::string & oldFeatureset)
 {
     if (IsRedirectedFeatureset(oldFeatureset))
     {
+        trace("Redirecting : %s ", oldFeatureset);
+        trace(" to github_dev_nrf52" EOL);
         return "github_dev_nrf52";
     }
+    trace("oldFeatureset: %s", oldFeatureset);
     return oldFeatureset;
 }
 #endif
@@ -848,10 +890,10 @@ void CherrySim::PositionNodesRandomly()
     //     nodes[nodeIndex].z = 0;
     // }
 
+    //New:set the number of nodes to place for rectangular positioning
     u32 totalNodes = GetTotalNodes();
     float spacingX = 0.2;
     float spacingY = 0.2;
-
 
     for (u32 i = 0; i < totalNodes; i++) {
         u32 row = i / 3;  // 計算行數

@@ -251,6 +251,7 @@ private:
 
         u32 CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const;
         u32 CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const;
+        void PrintDeviceType(const joinMeBufferPacket& packet) const;
 
         bool DoesBiggerKnownClusterExist();
 

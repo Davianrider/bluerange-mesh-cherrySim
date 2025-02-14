@@ -2225,12 +2225,15 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     //if (packet.payload.sender != 2)  return 0; 
     
     
+    
     DeviceConfiguration config;
     ErrorType err = FruityHal::GetDeviceConfiguration(config);
     DeviceType deviceType;
     if (err == ErrorType::SUCCESS)
     deviceType = static_cast<DeviceType>(config.deviceType);
     if (deviceType == DeviceType::SINK) goto calculate_score;
+
+    PrintDeviceType(packet);
 
     calculate_score:
     //If the packet is too old, filter it out
@@ -2319,7 +2322,9 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
     deviceType = static_cast<DeviceType>(config.deviceType);
     if (deviceType == DeviceType::SINK) return 0;
 
-    calculate_score:
+    PrintDeviceType(packet);
+
+    //calculate_score:
     //If the packet is too old, filter it out
     if (GS->appTimerDs - packet.receivedTimeDs > MAX_JOIN_ME_PACKET_AGE_DS) return 0;
 
@@ -2360,6 +2365,28 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
     //u32 score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
 
     return ModifyScoreBasedOnPreferredPartners(score, packet.payload.sender);
+}
+
+void Node::PrintDeviceType(const joinMeBufferPacket& packet) const {
+    trace("NodeId: %d ", packet.payload.sender );
+    trace(", DeviceType: ");
+    switch (packet.payload.deviceType) {
+        case DeviceType::STATIC:
+            trace("Static" EOL);
+            break;
+        case DeviceType::SINK:
+            trace("Sink" EOL);
+            break;
+        case DeviceType::PRIO:
+            trace("Prio" EOL);
+            break;
+        case DeviceType::LEAF:
+            trace("Leaf" EOL);
+            break;
+        default:
+            trace("Unknown" EOL);
+            break;
+    }
 }
 
 bool Node::DoesBiggerKnownClusterExist()

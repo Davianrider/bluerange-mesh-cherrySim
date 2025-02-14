@@ -131,7 +131,7 @@ constexpr NodeId NODE_ID_LOCAL_LOOPBACK = 30000; //30000 is like a local loopbac
 constexpr NodeId NODE_ID_HOPS_BASE = 30000; //30001 sends to the local node and one hop further, 30002 two hops
 constexpr NodeId NODE_ID_HOPS_BASE_SIZE = 1000;
 
-constexpr NodeId NODE_ID_SHORTEST_SINK = 2;
+constexpr NodeId NODE_ID_SHORTEST_SINK = 1;
 constexpr NodeId NODE_ID_ANYCAST_THEN_BROADCAST = 31001; //31001 will send the message to any one of the connected nodes and only that node will then broadcast this message
 
 constexpr NodeId NODE_ID_APP_BASE = 32000; //Custom GATT services, connections with Smartphones, should use (APP_BASE + moduleId)
