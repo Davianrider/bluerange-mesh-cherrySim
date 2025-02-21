@@ -2047,95 +2047,226 @@ void Node::StartFastJoinMeAdvertising()
 //If the other clusters were not good and we have something better, we advertise it.
 Node::DecisionStruct Node::DetermineBestClusterAvailable(void)
 {
+    // DecisionStruct result = { DecisionResult::NO_NODES_FOUND, 0, 0 };
+
+    // joinMeBufferPacket* bestClusterAsMaster = DetermineBestClusterAsMaster();
+
+    // //If we still do not have a freeOutConnection, we have no viable cluster to connect to
+    // if (GS->cm.freeMeshOutConnections > 0)
+    // {
+    //     //Now, if we want to be a master in the connection, we simply answer the ad packet that
+    //     //informs us about that cluster
+    //     if (bestClusterAsMaster != nullptr)
+    //     {
+    //         currentAckId = 0;
+
+    //         FruityHal::BleGapAddr address = bestClusterAsMaster->addr;
+
+    //         //Choose a different connection interval for leaf nodes
+    //         u16 connectionIv = Conf::GetInstance().meshMinConnectionInterval;
+    //         if(bestClusterAsMaster->payload.deviceType == DeviceType::LEAF){
+    //             connectionIv = MSEC_TO_UNITS(90, CONFIG_UNIT_1_25_MS);
+    //         }
+
+    //         ErrorType err = GS->cm.ConnectAsMaster(bestClusterAsMaster->payload.sender, &address, bestClusterAsMaster->payload.meshWriteHandle, connectionIv);
+
+    //         //Note the time that we tried to connect to this node so that we can blacklist it for some time if it does not work
+    //         if (err == ErrorType::SUCCESS) {
+    //             bestClusterAsMaster->lastConnectAttemptDs = GS->appTimerDs;
+    //             if(bestClusterAsMaster->attemptsToConnect <= 20) bestClusterAsMaster->attemptsToConnect++;
+    //         }
+
+    //         result.result = DecisionResult::CONNECT_AS_MASTER;
+    //         result.preferredPartner = bestClusterAsMaster->payload.sender;
+    //         return result;
+    //     }
+    // }
+
+    // //If no good cluster could be found (all are bigger than mine)
+    // //Find the best cluster that should connect to us (we as slave)
+    // currentAckId = 0;
+    // joinMeBufferPacket* bestClusterAsSlave = DetermineBestClusterAsSlave();
+
+    // //Set our ack field to the best cluster that we want to be a part of
+    // if (bestClusterAsSlave != nullptr)
+    // {
+    //     currentAckId = bestClusterAsSlave->payload.clusterId;
+
+    //     logt("DECISION", "Other clusters are bigger, we are going to be a slave of %u", currentAckId);
+
+    //     //For nodes with only 1 meshInConnection, we must disconnect from a cluster if a bigger cluster is found nearby
+    //     if (GS->config.meshMaxInConnections == 1) {
+
+    //         //Check if we have a recently established connection and do not disconnect if yes bofore the handshake has not timed out
+    //         bool freshConnectionAvailable = false;
+    //         BaseConnections conns = GS->cm.GetBaseConnections(ConnectionDirection::INVALID);
+    //         for (u32 i = 0; i < conns.count; i++) {
+    //             BaseConnectionHandle conn = conns.handles[i];
+    //             if (conn) {
+    //                 if (conn.GetCreationTimeDs() + Conf::meshHandshakeTimeoutDs > GS->appTimerDs) {
+    //                     freshConnectionAvailable = true;
+    //                     break;
+    //                 }
+    //             }
+    //         }
+    //         //Only if we are not currently doing a handshake and if we do not have a freeInConnection
+    //         if (!freshConnectionAvailable && GS->cm.freeMeshInConnections == 0) {
+    //             if (
+    //                 //Check if we have either different clusterSizes or if similar, only disconnect randomly
+    //                 //to prevent recurrent situations where two nodes will always disconnect at the same time
+    //                 GetClusterSize() != bestClusterAsSlave->payload.clusterSize
+    //                 || Utility::GetRandomInteger() < UINT32_MAX / 4
+    //             ) {
+    //                 GS->cm.ForceDisconnectOtherMeshConnections(nullptr, AppDisconnectReason::SHOULD_WAIT_AS_SLAVE);
+
+    //                 SetClusterSize(1);
+    //                 clusterId = GenerateClusterID();
+    //             }
+    //         }
+    //     }
+
+    //     UpdateJoinMePacket();
+
+    //     result.result = DecisionResult::CONNECT_AS_SLAVE;
+    //     result.preferredPartner = bestClusterAsSlave->payload.sender;
+    //     return result;
+    // }
+
+    // logt("DECISION", "no cluster found");
+
+    // result.result = DecisionResult::NO_NODES_FOUND;
+    // return result;
+
     DecisionStruct result = { DecisionResult::NO_NODES_FOUND, 0, 0 };
 
-    joinMeBufferPacket* bestClusterAsMaster = DetermineBestClusterAsMaster();
+    // 取得當前設備類型
+    DeviceConfiguration config;
+    ErrorType err = FruityHal::GetDeviceConfiguration(config);
+    DeviceType deviceType;
+    if (err == ErrorType::SUCCESS) {
+        deviceType = static_cast<DeviceType>(config.deviceType);
+    }
 
-    //If we still do not have a freeOutConnection, we have no viable cluster to connect to
-    if (GS->cm.freeMeshOutConnections > 0)
-    {
-        //Now, if we want to be a master in the connection, we simply answer the ad packet that
-        //informs us about that cluster
-        if (bestClusterAsMaster != nullptr)
-        {
+    // ** 如果是 Sink，優先建立 Mesh (當 Master)**
+    if (deviceType == DeviceType::SINK && GS->cm.freeMeshOutConnections > 0) {
+        
+        // 嘗試作為 Master 連接最好的節點
+        joinMeBufferPacket* bestClusterAsMaster = DetermineBestClusterAsMaster();
+        if (GS->cm.freeMeshOutConnections > 0 && bestClusterAsMaster != nullptr) {
             currentAckId = 0;
 
             FruityHal::BleGapAddr address = bestClusterAsMaster->addr;
-
-            //Choose a different connection interval for leaf nodes
             u16 connectionIv = Conf::GetInstance().meshMinConnectionInterval;
-            if(bestClusterAsMaster->payload.deviceType == DeviceType::LEAF){
+
+            if (bestClusterAsMaster->payload.deviceType == DeviceType::LEAF) {
                 connectionIv = MSEC_TO_UNITS(90, CONFIG_UNIT_1_25_MS);
             }
 
             ErrorType err = GS->cm.ConnectAsMaster(bestClusterAsMaster->payload.sender, &address, bestClusterAsMaster->payload.meshWriteHandle, connectionIv);
 
-            //Note the time that we tried to connect to this node so that we can blacklist it for some time if it does not work
             if (err == ErrorType::SUCCESS) {
                 bestClusterAsMaster->lastConnectAttemptDs = GS->appTimerDs;
-                if(bestClusterAsMaster->attemptsToConnect <= 20) bestClusterAsMaster->attemptsToConnect++;
+                if (bestClusterAsMaster->attemptsToConnect <= 20) {
+                    bestClusterAsMaster->attemptsToConnect++;
+                }
             }
 
             result.result = DecisionResult::CONNECT_AS_MASTER;
             result.preferredPartner = bestClusterAsMaster->payload.sender;
             return result;
         }
-    }
+    }else {
+        //If no good cluster could be found (all are bigger than mine)
+        //Find the best cluster that should connect to us (we as slave)
+        currentAckId = 0;
+        joinMeBufferPacket* bestClusterAsSlave = DetermineBestClusterAsSlave();
 
-    //If no good cluster could be found (all are bigger than mine)
-    //Find the best cluster that should connect to us (we as slave)
-    currentAckId = 0;
-    joinMeBufferPacket* bestClusterAsSlave = DetermineBestClusterAsSlave();
+        //Set our ack field to the best cluster that we want to be a part of
+        if (bestClusterAsSlave != nullptr)
+        {
+            currentAckId = bestClusterAsSlave->payload.clusterId;
 
-    //Set our ack field to the best cluster that we want to be a part of
-    if (bestClusterAsSlave != nullptr)
-    {
-        currentAckId = bestClusterAsSlave->payload.clusterId;
+            logt("DECISION", "Other clusters are bigger, we are going to be a slave of %u", currentAckId);
 
-        logt("DECISION", "Other clusters are bigger, we are going to be a slave of %u", currentAckId);
+            //For nodes with only 1 meshInConnection, we must disconnect from a cluster if a bigger cluster is found nearby
+            if (GS->config.meshMaxInConnections == 1) {
 
-        //For nodes with only 1 meshInConnection, we must disconnect from a cluster if a bigger cluster is found nearby
-        if (GS->config.meshMaxInConnections == 1) {
+                //Check if we have a recently established connection and do not disconnect if yes bofore the handshake has not timed out
+                bool freshConnectionAvailable = false;
+                BaseConnections conns = GS->cm.GetBaseConnections(ConnectionDirection::INVALID);
+                for (u32 i = 0; i < conns.count; i++) {
+                    BaseConnectionHandle conn = conns.handles[i];
+                    if (conn) {
+                        if (conn.GetCreationTimeDs() + Conf::meshHandshakeTimeoutDs > GS->appTimerDs) {
+                            freshConnectionAvailable = true;
+                            break;
+                        }
+                    }
+                }
+                //Only if we are not currently doing a handshake and if we do not have a freeInConnection
+                if (!freshConnectionAvailable && GS->cm.freeMeshInConnections == 0) {
+                    if (
+                        //Check if we have either different clusterSizes or if similar, only disconnect randomly
+                        //to prevent recurrent situations where two nodes will always disconnect at the same time
+                        GetClusterSize() != bestClusterAsSlave->payload.clusterSize
+                        || Utility::GetRandomInteger() < UINT32_MAX / 4
+                    ) {
+                        GS->cm.ForceDisconnectOtherMeshConnections(nullptr, AppDisconnectReason::SHOULD_WAIT_AS_SLAVE);
 
-            //Check if we have a recently established connection and do not disconnect if yes bofore the handshake has not timed out
-            bool freshConnectionAvailable = false;
-            BaseConnections conns = GS->cm.GetBaseConnections(ConnectionDirection::INVALID);
-            for (u32 i = 0; i < conns.count; i++) {
-                BaseConnectionHandle conn = conns.handles[i];
-                if (conn) {
-                    if (conn.GetCreationTimeDs() + Conf::meshHandshakeTimeoutDs > GS->appTimerDs) {
-                        freshConnectionAvailable = true;
-                        break;
+                        SetClusterSize(1);
+                        clusterId = GenerateClusterID();
                     }
                 }
             }
-            //Only if we are not currently doing a handshake and if we do not have a freeInConnection
-            if (!freshConnectionAvailable && GS->cm.freeMeshInConnections == 0) {
-                if (
-                    //Check if we have either different clusterSizes or if similar, only disconnect randomly
-                    //to prevent recurrent situations where two nodes will always disconnect at the same time
-                    GetClusterSize() != bestClusterAsSlave->payload.clusterSize
-                    || Utility::GetRandomInteger() < UINT32_MAX / 4
-                ) {
-                    GS->cm.ForceDisconnectOtherMeshConnections(nullptr, AppDisconnectReason::SHOULD_WAIT_AS_SLAVE);
 
-                    SetClusterSize(1);
-                    clusterId = GenerateClusterID();
+            UpdateJoinMePacket();
+
+            result.result = DecisionResult::CONNECT_AS_SLAVE;
+            result.preferredPartner = bestClusterAsSlave->payload.sender;
+            return result;
+        }
+
+        joinMeBufferPacket* bestClusterAsMaster = DetermineBestClusterAsMaster();
+
+        //If we still do not have a freeOutConnection, we have no viable cluster to connect to
+        if (GS->cm.freeMeshOutConnections > 0)
+        {
+            //Now, if we want to be a master in the connection, we simply answer the ad packet that
+            //informs us about that cluster
+            if (bestClusterAsMaster != nullptr)
+            {
+                currentAckId = 0;
+
+                FruityHal::BleGapAddr address = bestClusterAsMaster->addr;
+
+                //Choose a different connection interval for leaf nodes
+                u16 connectionIv = Conf::GetInstance().meshMinConnectionInterval;
+                if(bestClusterAsMaster->payload.deviceType == DeviceType::LEAF){
+                    connectionIv = MSEC_TO_UNITS(90, CONFIG_UNIT_1_25_MS);
                 }
+
+                ErrorType err = GS->cm.ConnectAsMaster(bestClusterAsMaster->payload.sender, &address, bestClusterAsMaster->payload.meshWriteHandle, connectionIv);
+
+                //Note the time that we tried to connect to this node so that we can blacklist it for some time if it does not work
+                if (err == ErrorType::SUCCESS) {
+                    bestClusterAsMaster->lastConnectAttemptDs = GS->appTimerDs;
+                    if(bestClusterAsMaster->attemptsToConnect <= 20) bestClusterAsMaster->attemptsToConnect++;
+                }
+
+                result.result = DecisionResult::CONNECT_AS_MASTER;
+                result.preferredPartner = bestClusterAsMaster->payload.sender;
+                return result;
             }
         }
 
-        UpdateJoinMePacket();
+        
 
-        result.result = DecisionResult::CONNECT_AS_SLAVE;
-        result.preferredPartner = bestClusterAsSlave->payload.sender;
+        logt("DECISION", "no cluster found");
+
+        result.result = DecisionResult::NO_NODES_FOUND;
         return result;
     }
 
-    logt("DECISION", "no cluster found");
-
-    result.result = DecisionResult::NO_NODES_FOUND;
-    return result;
 }
 
 u32 Node::ModifyScoreBasedOnPreferredPartners(u32 score, NodeId partner) const
@@ -2226,16 +2357,16 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     
     
     
-    DeviceConfiguration config;
-    ErrorType err = FruityHal::GetDeviceConfiguration(config);
-    DeviceType deviceType;
-    if (err == ErrorType::SUCCESS)
-    deviceType = static_cast<DeviceType>(config.deviceType);
-    if (deviceType == DeviceType::SINK) goto calculate_score;
+    // DeviceConfiguration config;
+    // ErrorType err = FruityHal::GetDeviceConfiguration(config);
+    // DeviceType deviceType;
+    // if (err == ErrorType::SUCCESS)
+    //deviceType = static_cast<DeviceType>(config.deviceType);
+    //if (deviceType == DeviceType::SINK) goto calculate_score;
 
-    PrintDeviceType(packet);
+    //PrintDeviceType(packet);
 
-    calculate_score:
+    //calculate_score:
     //If the packet is too old, filter it out
     if (GS->appTimerDs - packet.receivedTimeDs > MAX_JOIN_ME_PACKET_AGE_DS) return 0;
 
@@ -2272,35 +2403,35 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     //If we are a leaf node, we must not connect to anybody
     if(GET_DEVICE_TYPE() == DeviceType::LEAF) return 0;
 
-    // check device type
-	u8 isSink = 0;
-	u8 isPrio = 0;
-	if(packet.payload.deviceType == DeviceType::SINK)
-		isSink = 1;
-	else if(packet.payload.deviceType == DeviceType::PRIO)
-		isPrio = 1;
+    // // check device type
+	// u8 isSink = 0;
+	// u8 isPrio = 0;
+	// if(packet.payload.deviceType == DeviceType::SINK)
+	// 	isSink = 1;
+	// else if(packet.payload.deviceType == DeviceType::PRIO)
+	// 	isPrio = 1;
 
-    //change weight
-	u32 score = 0;
-	if(packet.payload.hopsToSink == 65535)
-	{
-		if(nodeType == DeviceType::PRIO)
-			score = isSink * 10000 + rssiScore;
-		else
-			score = isPrio * 10000 + rssiScore;
-	}
-	else
-	{
-		if(nodeType == DeviceType::PRIO)
-			score = 40000 + isSink * 10000  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore + (u32)(packet.payload.freeMeshOutConnections) * 500;
-		else
-			score = 40000 + isPrio * 10000  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore + (u32)(packet.payload.freeMeshOutConnections) * 500;
-	}
+    // //change weight
+	// u32 score = 0;
+	// if(packet.payload.hopsToSink == 65535)
+	// {
+	// 	if(nodeType == DeviceType::PRIO)
+	// 		score = isSink * 10000 + rssiScore;
+	// 	else
+	// 		score = isPrio * 10000 + rssiScore;
+	// }
+	// else
+	// {
+	// 	if(nodeType == DeviceType::PRIO)
+	// 		score = 40000 + isSink * 10000  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore + (u32)(packet.payload.freeMeshOutConnections) * 500;
+	// 	else
+	// 		score = 40000 + isPrio * 10000  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore + (u32)(packet.payload.freeMeshOutConnections) * 500;
+	// }
     
 
     //Free in connections are best, free out connections are good as well
     //TODO: RSSI should be factored into the score as well, maybe battery runtime, device type, etc...
-    //u32 score = (u32)(packet.payload.freeMeshInConnections) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
+    u32 score = (u32)(packet.payload.freeMeshInConnections) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
 
     return ModifyScoreBasedOnPreferredPartners(score, packet.payload.sender);
 }
@@ -2315,14 +2446,14 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
 
     //if (packet.payload.deviceType == DeviceType::SINK) goto calculate_score;
     
-    DeviceConfiguration config;
-    ErrorType err = FruityHal::GetDeviceConfiguration(config);
-    DeviceType deviceType;
-    if (err == ErrorType::SUCCESS)
-    deviceType = static_cast<DeviceType>(config.deviceType);
-    if (deviceType == DeviceType::SINK) return 0;
+    // DeviceConfiguration config;
+    // ErrorType err = FruityHal::GetDeviceConfiguration(config);
+    // DeviceType deviceType;
+    // if (err == ErrorType::SUCCESS)
+    // deviceType = static_cast<DeviceType>(config.deviceType);
+    // if (deviceType == DeviceType::SINK) return 0;
 
-    PrintDeviceType(packet);
+    // PrintDeviceType(packet);
 
     //calculate_score:
     //If the packet is too old, filter it out
@@ -2341,28 +2472,28 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
 
     u32 rssiScore = 100 + packet.rssi;
 
-    //new: only choose nodes that are connected to sink
-	if((nodeType != DeviceType::SINK) && (packet.payload.hopsToSink == 65535)) return 0;
+    // //new: only choose nodes that are connected to sink
+	// if((nodeType != DeviceType::SINK) && (packet.payload.hopsToSink == 65535)) return 0;
 
-	//check device type
-	u8 isSink= 0;
-	u8 isPrio= 0;
-	if(packet.payload.deviceType == DeviceType::SINK)
-		isSink = 1;
-	else if(packet.payload.deviceType == DeviceType::PRIO)
-		isPrio = 1;
+	// //check device type
+	// u8 isSink= 0;
+	// u8 isPrio= 0;
+	// if(packet.payload.deviceType == DeviceType::SINK)
+	// 	isSink = 1;
+	// else if(packet.payload.deviceType == DeviceType::PRIO)
+	// 	isPrio = 1;
 
-    //change weight
-	u32 score = 0;
-	if(nodeType == DeviceType::SINK)
-		score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 1000 + rssiScore;
-	else if(nodeType == DeviceType::PRIO)
-		score = 10000 + isSink * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 500 + (u32)(packet.payload.clusterSize) * 100  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore;
-	else if(nodeType == DeviceType::STATIC)
-		score = 10000 + (u32)(packet.payload.freeMeshOutConnections) * 500 + (u32)(packet.payload.clusterSize) * 100  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore;
+    // //change weight
+	// u32 score = 0;
+	// if(nodeType == DeviceType::SINK)
+	// 	score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 1000 + rssiScore;
+	// else if(nodeType == DeviceType::PRIO)
+	// 	score = 10000 + isSink * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 500 + (u32)(packet.payload.clusterSize) * 100  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore;
+	// else if(nodeType == DeviceType::STATIC)
+	// 	score = 10000 + (u32)(packet.payload.freeMeshOutConnections) * 500 + (u32)(packet.payload.clusterSize) * 100  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore;
 
     //Choose the one with the biggest cluster size, if there are more, prefer the most outConnections
-    //u32 score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
+    u32 score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
 
     return ModifyScoreBasedOnPreferredPartners(score, packet.payload.sender);
 }
@@ -2387,6 +2518,7 @@ void Node::PrintDeviceType(const joinMeBufferPacket& packet) const {
             trace("Unknown" EOL);
             break;
     }
+    //trace("ClusterId: %d" EOL, packet.payload.clusterId);
 }
 
 bool Node::DoesBiggerKnownClusterExist()
