@@ -290,7 +290,7 @@ SimConfiguration CherrySimRunner::CreateDefaultSimConfiguration()
 {
     SimConfiguration simConfig;
 
-    simConfig.seed = 8;
+    simConfig.seed = 117;
     simConfig.mapWidthInMeters = 30;
     simConfig.mapHeightInMeters = 30;
     simConfig.mapElevationInMeters = 1;
@@ -298,8 +298,8 @@ SimConfiguration CherrySimRunner::CreateDefaultSimConfiguration()
     simConfig.terminalId = 1; //Enter -1 to disable, 0 for all nodes, or a specific id
 
     //simConfig.nodeConfigName.insert({ "github_mesh_nrf52", 5 });//set Dev node, can be multiple nodes
-    simConfig.nodeConfigName.insert({ "prod_sink_nrf52", 1});//set Sink node,only one sink node is allowed
-    simConfig.nodeConfigName.insert({ "prod_mesh_nrf52", 10 });//set Dev node, can be multiple nodes
+    simConfig.nodeConfigName.insert({ "github_sink_nrf52", 1});//set Sink node,only one sink node is allowed
+    simConfig.nodeConfigName.insert({ "prod_mesh_nrf52", 3 });//set Dev node, can be multiple nodes
 
     simConfig.simOtherDelay = 100000; // Enter 1 - 100000 to send sim_other message only each ... simulation steps, this increases the speed significantly
     simConfig.playDelay = 0; //Allows us to view the simulation slower than simulated, is added after each step
@@ -349,7 +349,7 @@ void CherrySimRunner::Init()
 
     //We can now modify the nodes to use a different configuration
     //Set the first node to deviceType sink
-    sim->nodes[1].uicr.CUSTOMER[11] = (u32)DeviceType::SINK; //deviceType
+    sim->nodes[3].uicr.CUSTOMER[11] = (u32)DeviceType::SINK; //deviceType
 
 
     //Boot up all nodes

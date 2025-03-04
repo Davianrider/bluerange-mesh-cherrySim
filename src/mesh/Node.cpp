@@ -2047,6 +2047,7 @@ void Node::StartFastJoinMeAdvertising()
 //If the other clusters were not good and we have something better, we advertise it.
 Node::DecisionStruct Node::DetermineBestClusterAvailable(void)
 {
+    // original code
     // DecisionStruct result = { DecisionResult::NO_NODES_FOUND, 0, 0 };
 
     // joinMeBufferPacket* bestClusterAsMaster = DetermineBestClusterAsMaster();
@@ -2137,9 +2138,11 @@ Node::DecisionStruct Node::DetermineBestClusterAvailable(void)
     // result.result = DecisionResult::NO_NODES_FOUND;
     // return result;
 
+
+    // new: modified code
     DecisionStruct result = { DecisionResult::NO_NODES_FOUND, 0, 0 };
 
-    // 取得當前設備類型
+    // new: 取得當前設備類型
     DeviceConfiguration config;
     ErrorType err = FruityHal::GetDeviceConfiguration(config);
     DeviceType deviceType;
@@ -2147,10 +2150,10 @@ Node::DecisionStruct Node::DetermineBestClusterAvailable(void)
         deviceType = static_cast<DeviceType>(config.deviceType);
     }
 
-    // ** 如果是 Sink，優先建立 Mesh (當 Master)**
+    // new: 如果是 Sink，優先建立 Mesh (當 Master)
     if (deviceType == DeviceType::SINK && GS->cm.freeMeshOutConnections > 0) {
         
-        // 嘗試作為 Master 連接最好的節點
+        // new: 嘗試作為 Master 連接最好的節點
         joinMeBufferPacket* bestClusterAsMaster = DetermineBestClusterAsMaster();
         if (GS->cm.freeMeshOutConnections > 0 && bestClusterAsMaster != nullptr) {
             currentAckId = 0;
@@ -2176,10 +2179,15 @@ Node::DecisionStruct Node::DetermineBestClusterAvailable(void)
             return result;
         }
     }else {
+        //new: 先以slave找出最好的master進行連線
         //If no good cluster could be found (all are bigger than mine)
         //Find the best cluster that should connect to us (we as slave)
         currentAckId = 0;
         joinMeBufferPacket* bestClusterAsSlave = DetermineBestClusterAsSlave();
+
+        if(GET_DEVICE_TYPE() == DeviceType::SINK){
+            bestClusterAsSlave = nullptr;
+        }
 
         //Set our ack field to the best cluster that we want to be a part of
         if (bestClusterAsSlave != nullptr)
@@ -2226,6 +2234,7 @@ Node::DecisionStruct Node::DetermineBestClusterAvailable(void)
             return result;
         }
 
+        //new: 如果沒有找到合適的 master，再以slave找到適合的 master 進行連線
         joinMeBufferPacket* bestClusterAsMaster = DetermineBestClusterAsMaster();
 
         //If we still do not have a freeOutConnection, we have no viable cluster to connect to
@@ -2346,8 +2355,6 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
 
     // }
 
-    
-    
     //if(1) return 0;
     //new test if slave node id > now node id return 0; 
     //if (packet.payload.sender < configuration.nodeId) return 0;    
@@ -2355,18 +2362,15 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     //if (packet.payload.sender != 3 && packet.payload.sender != 4) return 0;  
     //if (packet.payload.sender != 2)  return 0; 
     
-    
-    
-    // DeviceConfiguration config;
-    // ErrorType err = FruityHal::GetDeviceConfiguration(config);
-    // DeviceType deviceType;
-    // if (err == ErrorType::SUCCESS)
-    //deviceType = static_cast<DeviceType>(config.deviceType);
-    //if (deviceType == DeviceType::SINK) goto calculate_score;
+    //new: 取得當前設備類型
+    DeviceConfiguration config;
+    ErrorType err = FruityHal::GetDeviceConfiguration(config);
+    DeviceType deviceType;
+    if (err == ErrorType::SUCCESS)
+    deviceType = static_cast<DeviceType>(config.deviceType);
 
     //PrintDeviceType(packet);
 
-    //calculate_score:
     //If the packet is too old, filter it out
     if (GS->appTimerDs - packet.receivedTimeDs > MAX_JOIN_ME_PACKET_AGE_DS) return 0;
 
@@ -2380,7 +2384,8 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     if (packet.payload.ackField != 0 && packet.payload.ackField != this->clusterId) return 0;
 
     //If the other cluster is bigger, we cannot connect as master
-    if (packet.payload.clusterSize > GetClusterSize()) return 0;
+    //new: add "&& GET_DEVICE_TYPE() != DeviceType::SINK" to prevent sink from connecting to be a slave
+    if (packet.payload.clusterSize > GetClusterSize() && GET_DEVICE_TYPE() != DeviceType::SINK) return 0;
 
     //Check if we recently tried to connect to him and blacklist him for a short amount of time
     if (
@@ -2403,32 +2408,6 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     //If we are a leaf node, we must not connect to anybody
     if(GET_DEVICE_TYPE() == DeviceType::LEAF) return 0;
 
-    // // check device type
-	// u8 isSink = 0;
-	// u8 isPrio = 0;
-	// if(packet.payload.deviceType == DeviceType::SINK)
-	// 	isSink = 1;
-	// else if(packet.payload.deviceType == DeviceType::PRIO)
-	// 	isPrio = 1;
-
-    // //change weight
-	// u32 score = 0;
-	// if(packet.payload.hopsToSink == 65535)
-	// {
-	// 	if(nodeType == DeviceType::PRIO)
-	// 		score = isSink * 10000 + rssiScore;
-	// 	else
-	// 		score = isPrio * 10000 + rssiScore;
-	// }
-	// else
-	// {
-	// 	if(nodeType == DeviceType::PRIO)
-	// 		score = 40000 + isSink * 10000  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore + (u32)(packet.payload.freeMeshOutConnections) * 500;
-	// 	else
-	// 		score = 40000 + isPrio * 10000  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore + (u32)(packet.payload.freeMeshOutConnections) * 500;
-	// }
-    
-
     //Free in connections are best, free out connections are good as well
     //TODO: RSSI should be factored into the score as well, maybe battery runtime, device type, etc...
     u32 score = (u32)(packet.payload.freeMeshInConnections) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
@@ -2439,23 +2418,18 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
 //If there are only bigger clusters around, we want to find the best
 //And set its id in our ack field
 u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
-{
-    // //If the node is sink, do not be a slave
-    //if (packet.payload.deviceType == DeviceType::SINK) return 0;
-
-
-    //if (packet.payload.deviceType == DeviceType::SINK) goto calculate_score;
+{ 
+    //new: 取得當前設備類型
+    DeviceConfiguration config;
+    ErrorType err = FruityHal::GetDeviceConfiguration(config);
+    DeviceType deviceType;
+    if (err == ErrorType::SUCCESS)
+    deviceType = static_cast<DeviceType>(config.deviceType);
     
-    // DeviceConfiguration config;
-    // ErrorType err = FruityHal::GetDeviceConfiguration(config);
-    // DeviceType deviceType;
-    // if (err == ErrorType::SUCCESS)
-    // deviceType = static_cast<DeviceType>(config.deviceType);
-    // if (deviceType == DeviceType::SINK) return 0;
+    if (deviceType == DeviceType::SINK) return 0;
 
     // PrintDeviceType(packet);
 
-    //calculate_score:
     //If the packet is too old, filter it out
     if (GS->appTimerDs - packet.receivedTimeDs > MAX_JOIN_ME_PACKET_AGE_DS) return 0;
 
@@ -2465,35 +2439,24 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
     //Do not check for freeOut == 0 as the partner will probably free up a conneciton for us and we should be ready
 
     //We will only be a slave of a bigger or equal cluster
-    if (packet.payload.clusterSize < GetClusterSize()) return 0;
+    //new: add "&& packet.payload.deviceType != DeviceType::SINK" to prevent sink from connecting to be a slave
+    if (packet.payload.clusterSize < GetClusterSize() && packet.payload.deviceType != DeviceType::SINK) return 0;
 
     //Connection should have a minimum of stability
     if(packet.rssi < STABLE_CONNECTION_RSSI_THRESHOLD) return 0;
 
     u32 rssiScore = 100 + packet.rssi;
 
-    // //new: only choose nodes that are connected to sink
-	// if((nodeType != DeviceType::SINK) && (packet.payload.hopsToSink == 65535)) return 0;
-
-	// //check device type
-	// u8 isSink= 0;
-	// u8 isPrio= 0;
-	// if(packet.payload.deviceType == DeviceType::SINK)
-	// 	isSink = 1;
-	// else if(packet.payload.deviceType == DeviceType::PRIO)
-	// 	isPrio = 1;
-
-    // //change weight
-	// u32 score = 0;
-	// if(nodeType == DeviceType::SINK)
-	// 	score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 1000 + rssiScore;
-	// else if(nodeType == DeviceType::PRIO)
-	// 	score = 10000 + isSink * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 500 + (u32)(packet.payload.clusterSize) * 100  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore;
-	// else if(nodeType == DeviceType::STATIC)
-	// 	score = 10000 + (u32)(packet.payload.freeMeshOutConnections) * 500 + (u32)(packet.payload.clusterSize) * 100  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore;
+    //new: add sink node weight score 
+    u32 score = 0;
+    if(packet.payload.deviceType == DeviceType::SINK){
+        score = 100000;
+    }
+    score += (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
+    
 
     //Choose the one with the biggest cluster size, if there are more, prefer the most outConnections
-    u32 score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
+    //u32 score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
 
     return ModifyScoreBasedOnPreferredPartners(score, packet.payload.sender);
 }
@@ -2523,7 +2486,7 @@ void Node::PrintDeviceType(const joinMeBufferPacket& packet) const {
 
 bool Node::DoesBiggerKnownClusterExist()
 {
-    return DetermineBestClusterAsSlave() != nullptr;
+        return DetermineBestClusterAsSlave() != nullptr;
 }
 
 void Node::ResetEmergencyDisconnect()

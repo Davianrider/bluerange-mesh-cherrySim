@@ -158,7 +158,7 @@ u32 MeshAccessConnection::ConnectAsMaster(FruityHal::BleGapAddr const * address,
 {
     //Only connect when not currently in another connection and when there are free connections
     if (GS->cm.pendingConnection != nullptr) return 0;
-
+    
     //Check if we already have a MeshAccessConnection to this address and do not allow a second
     MeshAccessConnections conns = GS->cm.GetMeshAccessConnections(ConnectionDirection::INVALID);
     for(u32 i=0; i<conns.count; i++)

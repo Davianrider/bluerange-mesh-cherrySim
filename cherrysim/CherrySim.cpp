@@ -883,7 +883,7 @@ void HelperPositionNodesRandomly(CherrySim &instance, std::vector<point_t> &poin
 //This will position all nodes randomly, by using dbscan to generate a configuration that can be clustered
 void CherrySim::PositionNodesRandomly()
 {
-    //Set some random x and y position for all nodes
+    // //Set some random x and y position for all nodes
     // for (u32 nodeIndex = 0; nodeIndex < GetTotalNodes(); nodeIndex++) {
     //     nodes[nodeIndex].x = (float)simState.rnd.NextU32() / (float)0xFFFFFFFF;
     //     nodes[nodeIndex].y = (float)simState.rnd.NextU32() / (float)0xFFFFFFFF;
