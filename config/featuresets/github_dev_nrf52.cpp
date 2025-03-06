@@ -114,7 +114,18 @@ u32 InitializeModules_github_dev_nrf52(bool createModule)
 
 DeviceType GetDeviceType_github_dev_nrf52()
 {
-    return DeviceType::STATIC;
+    // new: 取得當前設備類型
+    DeviceConfiguration config;
+    ErrorType err = FruityHal::GetDeviceConfiguration(config);
+    DeviceType deviceType;
+    if (err == ErrorType::SUCCESS) {
+        deviceType = static_cast<DeviceType>(config.deviceType);
+    }else{
+        deviceType = DeviceType::STATIC;
+    }
+
+    return deviceType;
+    //return DeviceType::STATIC;
 }
 
 Chipset GetChipset_github_dev_nrf52()
