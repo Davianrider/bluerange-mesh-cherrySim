@@ -716,7 +716,7 @@ void ConnectionManager::GattDataTransmittedEventHandler(const FruityHal::GattDat
         //This connection has just been given back some transmit buffers
         BaseConnection* connection = GetRawConnectionFromHandle(gattDataTransmitted.GetConnectionHandle());
         if (connection == nullptr) return;
-
+        
         connection->HandlePacketSent(gattDataTransmitted.GetCompleteCount(), 0);
 
         sentMeshPacketsUnreliable += gattDataTransmitted.GetCompleteCount();

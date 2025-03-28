@@ -1143,7 +1143,7 @@ void StatusReporterModule::MeshMessageReceivedHandler(BaseConnection* connection
             if(actionType == StatusModuleGeneralMessages::LIVE_REPORT)
             {
                 StatusReporterModuleLiveReportMessage const * packetData = (StatusReporterModuleLiveReportMessage const *) (packet->data);
-                logjson("STATUSMOD", "{\"type\":\"live_report\",\"nodeId\":%d,\"module\":%u,\"code\":%u,\"extra\":%u,\"extra2\":%u}" SEP, packet->header.sender, (u8)ModuleId::STATUS_REPORTER_MODULE, packetData->reportType, packetData->extra, packetData->extra2);
+                //logjson("STATUSMOD", "{\"type\":\"live_report\",\"nodeId\":%d,\"module\":%u,\"code\":%u,\"extra\":%u,\"extra2\":%u}" SEP, packet->header.sender, (u8)ModuleId::STATUS_REPORTER_MODULE, packetData->reportType, packetData->extra, packetData->extra2);
             }
         }
     }

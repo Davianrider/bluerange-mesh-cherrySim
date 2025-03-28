@@ -623,6 +623,13 @@ void Node::ReceiveClusterInfoUpdate(MeshConnection* connection, ConnPacketCluste
     //Log Cluster change to UART
     logjson("CLUSTER", "{\"type\":\"cluster_update\",\"size\":%d,\"newId\":%u,\"masterBit\":%u}" SEP, clusterSize, clusterId, packet->payload.connectionMasterBitHandover);
 
+    // //test mesh finish time
+    // if(clusterSize == 11){
+    //     trace("##############test mesh finish time##############"EOL);
+    //     trace("Delaytimer : %u Utc : %u " EOL, GS->delaytimer, GS->timeManager.GetUtcTime());
+    //     trace("##############test mesh finish time##############"EOL);
+    // }
+
     //Enable discovery or prolong its state
     KeepHighDiscoveryActive();
 
@@ -1216,6 +1223,7 @@ void Node::MeshMessageReceivedHandler(BaseConnection* connection, BaseConnection
                 
                 SetEnrolledNodesResponseMessage responseMessage;
                 responseMessage.enrolledNodes = GS->node.configuration.numberOfEnrolledDevices;
+                //trace("test"EOL);
                 SendModuleActionMessage(
                     MessageType::MODULE_ACTION_RESPONSE,
                     packetHeader->sender,
@@ -1961,7 +1969,13 @@ void Node::UpdateJoinMePacket()
     packet->sender = configuration.nodeId;
     packet->clusterId = this->clusterId;
     packet->clusterSize = this->clusterSize;
-    packet->freeMeshInConnections = GS->cm.freeMeshInConnections;
+
+    if (GET_DEVICE_TYPE() == DeviceType::SINK) {
+        packet->freeMeshInConnections = 0;
+    }
+    else{
+        packet->freeMeshInConnections = GS->cm.freeMeshInConnections;
+    }
     packet->freeMeshOutConnections = GS->cm.freeMeshOutConnections;
 
     //A leaf only has one free in connection
@@ -1982,7 +1996,7 @@ void Node::UpdateJoinMePacket()
     packet->txPower = Conf::defaultDBmTX;
     packet->deviceType = GET_DEVICE_TYPE();
     packet->hopsToSink = GS->cm.GetMeshHopsToShortestSink(nullptr);
-    packet->meshWriteHandle = meshService.sendMessageCharacteristicHandle.valueHandle;
+    packet->meshWriteHandle = meshService.sendMessageCharacteristicHandle.valueHandle;   
 
     //We only use the concept of ackIds if we only use one mesh inConnection
     //Otherwhise, we do not need to use it as a partner can use our free inConnection
@@ -2003,6 +2017,13 @@ void Node::UpdateJoinMePacket()
 
     logjson("SIM", "{\"type\":\"update_joinme\",\"clusterId\":%u,\"clusterSize\":%d}" SEP, clusterId, clusterSize);
 
+    //test mesh finish time
+
+    if(clusterSize == 11){
+        trace("##############test mesh finish time##############"EOL);
+        trace("Delaytimer : %u Utc : %u " EOL, GS->delaytimer, GS->timeManager.GetUtcTime());
+        trace("##############test mesh finish time##############"EOL);
+    }
     
     //Stop advertising if we are already connected as a leaf. Necessary for EoModule
     if(GET_DEVICE_TYPE() == DeviceType::LEAF && GS->cm.freeMeshInConnections == 0){
@@ -2234,7 +2255,7 @@ Node::DecisionStruct Node::DetermineBestClusterAvailable(void)
             return result;
         }
 
-        //new: 如果沒有找到合適的 master，再以slave找到適合的 master 進行連線
+        //new: 如果沒有找到合適的 master，再以Master找到適合的 Slave 進行連線
         joinMeBufferPacket* bestClusterAsMaster = DetermineBestClusterAsMaster();
 
         //If we still do not have a freeOutConnection, we have no viable cluster to connect to
@@ -2369,6 +2390,7 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     if (err == ErrorType::SUCCESS)
     deviceType = static_cast<DeviceType>(config.deviceType);
 
+    //if (packet.payload.hopsToSink >= 0 && GET_DEVICE_TYPE() == DeviceType::SINK) return 0;
     //PrintDeviceType(packet);
 
     //If the packet is too old, filter it out
@@ -2427,6 +2449,10 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
     deviceType = static_cast<DeviceType>(config.deviceType);
     
     if (deviceType == DeviceType::SINK) return 0;
+
+    if (packet.payload.hopsToSink < 0) return 0;
+
+    if (packet.payload.freeMeshOutConnections == 0) return 0;
 
     // PrintDeviceType(packet);
 

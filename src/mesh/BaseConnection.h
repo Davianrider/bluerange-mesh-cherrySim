@@ -112,6 +112,7 @@ enum class AppDisconnectReason : u8 {
     MULTIPLE_MA_ON_ASSET = 39,
     HANDLE_PACKET_SENT_ERROR = 40,
     MTU_UPGRADE_FAILED = 41,
+    SINK_UNREACHABLE = 42, //new
 };
 
 

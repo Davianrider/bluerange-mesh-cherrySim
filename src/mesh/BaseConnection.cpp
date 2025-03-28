@@ -306,7 +306,7 @@ void BaseConnection::HandlePacketSent(u8 sentUnreliable, u8 sentReliable)
 
     //We must iterate in a loop to delete all packets if more than one was sent
     u8 numSent = sentUnreliable + sentReliable;
-
+    
     for(u32 i=0; i<numSent; i++){
 
         //Check if packets were sent manually using a softdevice call and thereby bypassing the sendQueues
@@ -376,14 +376,13 @@ void BaseConnection::HandlePacketSent(u8 sentUnreliable, u8 sentReliable)
         else
         {
             DataSentHandler(queueBuffer + SIZEOF_BASE_CONNECTION_SEND_DATA_PACKED, length - SIZEOF_BASE_CONNECTION_SEND_DATA_PACKED, messageHandle);
-#ifdef SIM_ENABLED
-            char stringBuffer[1000];
-            Logger::ConvertBufferToBase64String(queueBuffer + SIZEOF_BASE_CONNECTION_SEND_DATA_PACKED, length - SIZEOF_BASE_CONNECTION_SEND_DATA_PACKED, stringBuffer, sizeof(stringBuffer));
-            logt("CONN", "DataSentHandler: %s", stringBuffer);
-#endif
+// #ifdef SIM_ENABLED
+//             char stringBuffer[1000];
+//             Logger::ConvertBufferToBase64String(queueBuffer + SIZEOF_BASE_CONNECTION_SEND_DATA_PACKED, length - SIZEOF_BASE_CONNECTION_SEND_DATA_PACKED, stringBuffer, sizeof(stringBuffer));
+//             logt("CONN", "DataSentHandler: %s", stringBuffer);
+// #endif
         }
-
-
+ 
         activeQueue->PopPacket();
         dataSentLength = 0;
     }

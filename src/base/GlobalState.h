@@ -102,6 +102,7 @@ class GlobalState
         u32 CollsndCount =0; //(包含碰撞)
         u32 MultipleUnit =0;
         u32 MultipleCount=0;
+
         //#################### App timer ###########################
         //To keep track of timer ticks
         u32 previousRtcTicks = 0;

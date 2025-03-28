@@ -353,6 +353,7 @@ enum class LiveReportHandshakeFailCode : u8
     NETWORK_ID_MISMATCH,
     WRONG_DIRECTION,
     UNPREFERRED_CONNECTION,
+    SINK_UNREACHABLE, //new
 };
 
 enum class PinsetIdentifier : u16 {

@@ -892,8 +892,8 @@ void CherrySim::PositionNodesRandomly()
 
     //New:set the number of nodes to place for rectangular positioning
     u32 totalNodes = GetTotalNodes();
-    float spacingX = 0.2;
-    float spacingY = 0.2;
+    float spacingX = 0.1;
+    float spacingY = 0.1;
 
     for (u32 i = 0; i < totalNodes; i++) {
         u32 row = i / 3;  // 計算行數

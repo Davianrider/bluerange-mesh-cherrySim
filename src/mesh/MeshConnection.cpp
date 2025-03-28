@@ -694,6 +694,7 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
 
             logt("HANDSHAKE", "IN <= %d CLUSTER_WELCOME clustID:%x, clustSize:%d, toSink:%d", packet->header.sender, packet->payload.clusterId, packet->payload.clusterSize, packet->payload.hopsToSink);
 
+            
             //PART 1: We do have the same cluster ID. Ouuups, should not have happened, run Forest!
             if (packet->payload.clusterId == clusterIDBackup)
             {
@@ -717,6 +718,8 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
                 }
 
             }
+
+
             //Later version of the packet also has the networkId included
             else if (sendData->dataLength >= SIZEOF_CONN_PACKET_CLUSTER_WELCOME_WITH_NETWORK_ID
                 && packet->payload.networkId != GS->node.configuration.networkId)
@@ -728,13 +731,15 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
                 handshakeFailCode = LiveReportHandshakeFailCode::NETWORK_ID_MISMATCH;
 
             }
-            else if (!GS->node.IsPreferredConnection(packet->header.sender) && GS->config.configuration.preferredConnectionMode == PreferredConnectionMode::IGNORED)
+            else if (!GS->node.IsPreferredConnection(packet->header.sender) 
+                && GS->config.configuration.preferredConnectionMode == PreferredConnectionMode::IGNORED)
             {
                 logt("HANDSHAKE", "Unpreferred connection tried to connect. %u", (u32)(packet->header.sender));
                 this->DisconnectAndRemove(AppDisconnectReason::UNPREFERRED_CONNECTION);
 
                 handshakeFailCode = LiveReportHandshakeFailCode::UNPREFERRED_CONNECTION;
             }
+            
             else
             {
 

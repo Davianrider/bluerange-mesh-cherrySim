@@ -295,7 +295,7 @@ SimConfiguration CherrySimRunner::CreateDefaultSimConfiguration()
     simConfig.mapHeightInMeters = 30;
     simConfig.mapElevationInMeters = 1;
     simConfig.simTickDurationMs = 50;
-    simConfig.terminalId = 1; //Enter -1 to disable, 0 for all nodes, or a specific id
+    simConfig.terminalId = 4; //Enter -1 to disable, 0 for all nodes, or a specific id
 
     //simConfig.nodeConfigName.insert({ "github_mesh_nrf52", 5 });//set Dev node, can be multiple nodes
     simConfig.nodeConfigName.insert({ "prod_sink_nrf52", 1});//set Sink node,only one sink node is allowed
@@ -350,7 +350,7 @@ void CherrySimRunner::Init()
     //We can now modify the nodes to use a different configuration
     //Set the first node to deviceType sink
     sim->nodes[3].uicr.CUSTOMER[11] = (u32)DeviceType::SINK; //deviceType
-
+    
 
     //Boot up all nodes
     for (u32 i = 0; i < sim->GetTotalNodes(); i++) {
