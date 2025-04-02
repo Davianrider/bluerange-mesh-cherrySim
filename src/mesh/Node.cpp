@@ -832,6 +832,38 @@ void Node::MeshMessageReceivedHandler(BaseConnection* connection, BaseConnection
                 );
             }
 
+            //new:send hops to sink value to sender
+            if(packet->actionType == (u8)NodeModuleTriggerActionMessages::HOP_COUNT){
+
+                u8 hopsToSink = 255; // Initialize to max
+
+                MeshConnections conn = GS->cm.GetMeshConnections(ConnectionDirection::INVALID);
+                trace("Number of mesh connections: %u" EOL, conn.count);
+
+                for (u32 i = 0; i <= conn.count; i++) {
+                    u8 hops = GS->cm.GetMeshHopsToShortestSink(conn.handles[i].GetConnection());
+                    trace("Connection %u has %d hops to sink" EOL, i, hops);
+
+                    if (hops >= 0) {
+                        hopsToSink = hops;
+                    }
+                }
+
+                if (hopsToSink == 255) {
+                    //hopsToSink = 0; // Fallback if no sink reachable
+                }
+
+                SendModuleActionMessage(
+                    MessageType::MODULE_ACTION_RESPONSE,
+                    packetHeader->sender,
+                    (u8)NodeModuleActionResponseMessages::GET_HOPS_TO_SINK,
+                    hopsToSink,
+                    nullptr,
+                    0,
+                    false
+                );
+            }
+
             if (packet->actionType == (u8)NodeModuleTriggerActionMessages::PING) {
                 SendModuleActionMessage(
                     MessageType::MODULE_ACTION_RESPONSE,
@@ -961,7 +993,7 @@ void Node::MeshMessageReceivedHandler(BaseConnection* connection, BaseConnection
             //new find_degree
             else if (packet->actionType == (u8)NodeModuleTriggerActionMessages::FIND_DEGREE)
             {
-                TOTAL_NODE_NUM = 3;
+                TOTAL_NODE_NUM = 31;
 
                     /*初始化deg記憶體空間==-1*/
                 if (init == -1) {
@@ -1350,6 +1382,20 @@ void Node::MeshMessageReceivedHandler(BaseConnection* connection, BaseConnection
                 TimeManager::ConvertTimeToString(message->unixTimeStamp, message->offset, 0, timestring, sizeof(timestring));
                 logt("NODE", R"(Node %u reported: %s, timeSyncState: %u, isTimeMaster: %s)", packetHeader->sender, timestring, (u32)message->timeSyncState, message->isTimeMaster ? "true" : "false");
             }
+            //new:receiced hops to sink value from sender
+            else if (packet->actionType == (u8)NodeModuleActionResponseMessages::GET_HOPS_TO_SINK)
+            {
+                logjson("NODE", "{\"type\":\"hops_to_sink\",\"nodeId\":%d,\"module\":%u,\"hopsToSink\":%u}" SEP,
+                    packetHeader->sender,
+                    (u32)ModuleId::NODE,
+                    packet->requestHandle);
+                if (packet->requestHandle > GS->meshHopCount){
+                    GS->meshHopCount = packet->requestHandle;
+                    trace("hopsToSink: from %u to %u" EOL, GS->meshHopCount, packet->requestHandle);
+                }
+
+            }
+            
             else if (packet->actionType == (u8)NodeModuleActionResponseMessages::SET_DISCOVERY_RESULT)
             {
                 logjson("NODE", "{\"type\":\"set_discovery_result\",\"nodeId\":%d,\"module\":%u}" SEP, packetHeader->sender, (u32)ModuleId::NODE);
@@ -1970,12 +2016,14 @@ void Node::UpdateJoinMePacket()
     packet->clusterId = this->clusterId;
     packet->clusterSize = this->clusterSize;
 
+    //new:如果是Sink節點，則不需要freeInConnections
     if (GET_DEVICE_TYPE() == DeviceType::SINK) {
         packet->freeMeshInConnections = 0;
     }
     else{
         packet->freeMeshInConnections = GS->cm.freeMeshInConnections;
     }
+
     packet->freeMeshOutConnections = GS->cm.freeMeshOutConnections;
 
     //A leaf only has one free in connection
@@ -2450,8 +2498,9 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
     
     if (deviceType == DeviceType::SINK) return 0;
 
+    //new: 如果是 Sink，則不考慮連接
     if (packet.payload.hopsToSink < 0) return 0;
-
+    //new: 如果freeMeshOutConnections == 0，則不考慮連接
     if (packet.payload.freeMeshOutConnections == 0) return 0;
 
     // PrintDeviceType(packet);
@@ -3753,7 +3802,30 @@ TerminalCommandHandlerReturnType Node::TerminalCommandHandler(const char* comman
                 return TerminalCommandHandlerReturnType::SUCCESS;
             }
 
+            //new command: know all node hop count
+            if (commandArgsSize > 3 && TERMARGS(3, "hopcount"))
+            {
+                //  0     1    2      3         
+                //action this node hopcount
 
+                GS->meshHopCount = 0;
+                TOTAL_NODE_NUM = 11;
+
+                for(int j = 1; j <= TOTAL_NODE_NUM; j++){
+                    //if(j != destinationNode) { //new
+                        SendModuleActionMessage(
+                            MessageType::MODULE_TRIGGER_ACTION,
+                            j,
+                            (u8)NodeModuleTriggerActionMessages::HOP_COUNT,
+                            0,
+                            nullptr,
+                            0,
+                            false
+                        );
+                    //}
+                }
+                return TerminalCommandHandlerReturnType::SUCCESS;
+            }
             //new command: let many nodes generate load
             if (commandArgsSize > 4 && TERMARGS(3, "multi_generate_load"))
             {

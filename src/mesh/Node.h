@@ -136,6 +136,7 @@ private:
             SET_FLAG=15,
             TRANSMIT_DATA_MultipleCount=16,
             SET_UNIT=17,
+            HOP_COUNT = 22,
         };
 
         enum class NodeModuleActionResponseMessages : u8
@@ -151,6 +152,7 @@ private:
             REMOVE_DYNAMIC_GROUP             = 10,
             CLEAR_DYNAMIC_GROUPS             = 11,
             GET_DYNAMIC_GROUPS               = 12,
+            GET_HOPS_TO_SINK                 = 13, //new
         };
 
         #pragma pack(push, 1)
