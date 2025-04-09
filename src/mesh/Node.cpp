@@ -81,6 +81,7 @@ u8 TOTAL_NODE_NUM = -1;//nnber 注意 17
 u32 MultipleCount[16];
 u32 CollsndCount[16];
 u32 avgDelay[16];
+u32 meshHopCount[50];
 int rcvCount[16];
 
 int ssettime=-1; // ssettime 開關
@@ -623,13 +624,6 @@ void Node::ReceiveClusterInfoUpdate(MeshConnection* connection, ConnPacketCluste
     //Log Cluster change to UART
     logjson("CLUSTER", "{\"type\":\"cluster_update\",\"size\":%d,\"newId\":%u,\"masterBit\":%u}" SEP, clusterSize, clusterId, packet->payload.connectionMasterBitHandover);
 
-    // //test mesh finish time
-    // if(clusterSize == 11){
-    //     trace("##############test mesh finish time##############"EOL);
-    //     trace("Delaytimer : %u Utc : %u " EOL, GS->delaytimer, GS->timeManager.GetUtcTime());
-    //     trace("##############test mesh finish time##############"EOL);
-    // }
-
     //Enable discovery or prolong its state
     KeepHighDiscoveryActive();
 
@@ -840,17 +834,17 @@ void Node::MeshMessageReceivedHandler(BaseConnection* connection, BaseConnection
                 MeshConnections conn = GS->cm.GetMeshConnections(ConnectionDirection::INVALID);
                 trace("Number of mesh connections: %u" EOL, conn.count);
 
-                for (u32 i = 0; i <= conn.count; i++) {
+                for (u32 i = 1; i <= conn.count; i++) {
                     u8 hops = GS->cm.GetMeshHopsToShortestSink(conn.handles[i].GetConnection());
                     trace("Connection %u has %d hops to sink" EOL, i, hops);
 
-                    if (hops >= 0) {
+                    if (hops >= 0 && hops < hopsToSink) {
                         hopsToSink = hops;
                     }
                 }
 
                 if (hopsToSink == 255) {
-                    //hopsToSink = 0; // Fallback if no sink reachable
+                    hopsToSink = 0; // Fallback if no sink reachable
                 }
 
                 SendModuleActionMessage(
@@ -1389,11 +1383,37 @@ void Node::MeshMessageReceivedHandler(BaseConnection* connection, BaseConnection
                     packetHeader->sender,
                     (u32)ModuleId::NODE,
                     packet->requestHandle);
-                if (packet->requestHandle > GS->meshHopCount){
-                    GS->meshHopCount = packet->requestHandle;
-                    trace("hopsToSink: from %u to %u" EOL, GS->meshHopCount, packet->requestHandle);
+                if (packet->requestHandle > GS->maxMeshHopCount){
+                    trace("MAX hopsToSink: from %u to %u" EOL, GS->maxMeshHopCount, packet->requestHandle);
+                    GS->maxMeshHopCount = packet->requestHandle;
                 }
 
+                meshHopCount[packetHeader->sender - 1] = packet->requestHandle;
+
+                if (packetHeader->sender < TOTAL_NODE_NUM){
+                    u32 nextNodeId = packetHeader->sender + 1;
+                    SendModuleActionMessage(
+                        MessageType::MODULE_TRIGGER_ACTION,
+                        nextNodeId,
+                        (u8)NodeModuleTriggerActionMessages::HOP_COUNT,
+                        0,
+                        nullptr,
+                        0,
+                        false
+                    );
+                }else if (packetHeader->sender == TOTAL_NODE_NUM){
+                    GS->avgMeshHopCount = 0.0;
+                    u32 temp = 0;
+                    for (u32 i = 0; i < TOTAL_NODE_NUM; i++){
+                        temp += meshHopCount[i];
+                        trace("Node %u hopsToSink: %u" EOL, i + 1, meshHopCount[i]);
+                    }
+                    GS->avgMeshHopCount = (float)temp / (float)TOTAL_NODE_NUM;
+
+                    printf("avg hopsToSink: %.2f" EOL, GS->avgMeshHopCount);
+                    trace("MAX hopsToSink: %u" EOL, GS->maxMeshHopCount);
+                    trace("TOTAL_NODE_NUM: %u" EOL, TOTAL_NODE_NUM);
+                }
             }
             
             else if (packet->actionType == (u8)NodeModuleActionResponseMessages::SET_DISCOVERY_RESULT)
@@ -2016,6 +2036,9 @@ void Node::UpdateJoinMePacket()
     packet->clusterId = this->clusterId;
     packet->clusterSize = this->clusterSize;
 
+
+    //original code
+    //packet->freeMeshInConnections = GS->cm.freeMeshInConnections;
     //new:如果是Sink節點，則不需要freeInConnections
     if (GET_DEVICE_TYPE() == DeviceType::SINK) {
         packet->freeMeshInConnections = 0;
@@ -2116,7 +2139,7 @@ void Node::StartFastJoinMeAdvertising()
 //If the other clusters were not good and we have something better, we advertise it.
 Node::DecisionStruct Node::DetermineBestClusterAvailable(void)
 {
-    // original code
+    // // original code
     // DecisionStruct result = { DecisionResult::NO_NODES_FOUND, 0, 0 };
 
     // joinMeBufferPacket* bestClusterAsMaster = DetermineBestClusterAsMaster();
@@ -2386,6 +2409,16 @@ joinMeBufferPacket * Node::DetermineBestCluster(u32(Node::*clusterRatingFunction
             bestScore = score;
             bestCluster = packet;
         }
+        //new test
+        else if(score == bestScore && bestCluster != nullptr) //new: same score dicision -> choose good hops, freeOuts, rssi
+		{
+			if(packet->payload.hopsToSink < bestCluster->payload.hopsToSink)
+				bestCluster = packet;
+			else if((packet->payload.hopsToSink == bestCluster->payload.hopsToSink) && (packet->payload.freeMeshOutConnections > bestCluster->payload.freeMeshOutConnections))
+				bestCluster = packet;
+			else if((packet->payload.hopsToSink == bestCluster->payload.hopsToSink) && (packet->payload.freeMeshOutConnections == bestCluster->payload.freeMeshOutConnections) && (100 + packet->rssi > 100 + bestCluster->rssi))
+				bestCluster = packet;
+		}
     }
     return bestCluster;
 }
@@ -2438,7 +2471,6 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     if (err == ErrorType::SUCCESS)
     deviceType = static_cast<DeviceType>(config.deviceType);
 
-    //if (packet.payload.hopsToSink >= 0 && GET_DEVICE_TYPE() == DeviceType::SINK) return 0;
     //PrintDeviceType(packet);
 
     //If the packet is too old, filter it out
@@ -2454,6 +2486,8 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     if (packet.payload.ackField != 0 && packet.payload.ackField != this->clusterId) return 0;
 
     //If the other cluster is bigger, we cannot connect as master
+    // //original code
+    // if (packet.payload.clusterSize > GetClusterSize()) return 0;
     //new: add "&& GET_DEVICE_TYPE() != DeviceType::SINK" to prevent sink from connecting to be a slave
     if (packet.payload.clusterSize > GetClusterSize() && GET_DEVICE_TYPE() != DeviceType::SINK) return 0;
 
@@ -2479,9 +2513,38 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
     if(GET_DEVICE_TYPE() == DeviceType::LEAF) return 0;
 
     //Free in connections are best, free out connections are good as well
-    //TODO: RSSI should be factored into the score as well, maybe battery runtime, device type, etc...
-    u32 score = (u32)(packet.payload.freeMeshInConnections) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
+    // //TODO: RSSI should be factored into the score as well, maybe battery runtime, device type, etc...
+    // u32 score = (u32)(packet.payload.freeMeshInConnections) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
 
+
+    //new: add sink node weight score
+    u32 score =  (u32)(packet.payload.freeMeshOutConnections) + rssiScore - (u32)(packet.payload.hopsToSink) * 1000;
+    // //test score
+    // // check device type
+	// u8 isSink = 0;
+	// u8 isPrio = 0;
+	// if(packet.payload.deviceType == DeviceType::SINK)
+	// 	isSink = 1;
+	// else if(packet.payload.deviceType == DeviceType::PRIO)
+	// 	isPrio = 1;
+
+    // u32 score = 0;
+    // if(packet.payload.hopsToSink == 65535)
+	// {
+	// 	if(nodeType == DeviceType::PRIO)
+	// 		score = isSink * 10000 + rssiScore;
+	// 	else
+	// 		score = isPrio * 10000 + rssiScore;
+	// }
+	// else
+	// {
+	// 	if(nodeType == DeviceType::PRIO)
+	// 		score = 40000 + isSink * 10000  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore + (u32)(packet.payload.freeMeshOutConnections) * 500;
+	// 	else
+	// 		score = 40000 + isPrio * 10000  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore + (u32)(packet.payload.freeMeshOutConnections) * 500;
+	// }
+    
+    
     return ModifyScoreBasedOnPreferredPartners(score, packet.payload.sender);
 }
 
@@ -2514,6 +2577,8 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
     //Do not check for freeOut == 0 as the partner will probably free up a conneciton for us and we should be ready
 
     //We will only be a slave of a bigger or equal cluster
+    // //original code
+    // if (packet.payload.clusterSize < GetClusterSize()) return 0;
     //new: add "&& packet.payload.deviceType != DeviceType::SINK" to prevent sink from connecting to be a slave
     if (packet.payload.clusterSize < GetClusterSize() && packet.payload.deviceType != DeviceType::SINK) return 0;
 
@@ -2522,13 +2587,34 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
 
     u32 rssiScore = 100 + packet.rssi;
 
+    //new: only choose nodes that are connected to sink
+    //if((nodeType != DeviceType::SINK) && (packet.payload.hopsToSink == 65535)) return 0;
+
     //new: add sink node weight score 
     u32 score = 0;
     if(packet.payload.deviceType == DeviceType::SINK){
-        score = 100000;
+        score = 10000;
     }
-    score += (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
-    
+    // //original code
+    // score += (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
+    //new: add tree balance code
+    score += (u32)(packet.payload.hopsToSink) * 1000 + (u32)(packet.payload.clusterSize) * 100 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
+
+    // u32 score = 0;
+	// if(nodeType == DeviceType::SINK)
+	// 	score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 1000 + rssiScore;
+	// else if(nodeType == DeviceType::PRIO)
+	// 	score = 10000 + isSink * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 500 + (u32)(packet.payload.clusterSize) * 100  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore;
+	// else if(nodeType == DeviceType::STATIC)
+	// 	score = 10000 + (u32)(packet.payload.freeMeshOutConnections) * 500 + (u32)(packet.payload.clusterSize) * 100  - (u32)(packet.payload.hopsToSink) * 1000 + rssiScore;
+
+    // //check device type
+    // u8 isSink= 0;
+    // u8 isPrio= 0;
+    // if(packet.payload.deviceType == DeviceType::SINK)
+    //     isSink = 1;
+    // else if(packet.payload.deviceType == DeviceType::PRIO)
+    //     isPrio = 1;
 
     //Choose the one with the biggest cluster size, if there are more, prefer the most outConnections
     //u32 score = (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
@@ -3803,27 +3889,28 @@ TerminalCommandHandlerReturnType Node::TerminalCommandHandler(const char* comman
             }
 
             //new command: know all node hop count
-            if (commandArgsSize > 3 && TERMARGS(3, "hopcount"))
+            if (commandArgsSize > 4 && TERMARGS(3, "hopcount"))
             {
-                //  0     1    2      3         
-                //action this node hopcount
+                //  0     1    2      3          4
+                //action this node hopcount TOTAL_NODE_NUM
+                
+                GS->maxMeshHopCount = 0;
+                GS->avgMeshHopCount = 0;
+                TOTAL_NODE_NUM = Utility::StringToU8(commandArgs[4]);
 
-                GS->meshHopCount = 0;
-                TOTAL_NODE_NUM = 11;
+                for (int i = 0; i < TOTAL_NODE_NUM ; i++){
+                    meshHopCount[i] = 0;
+                } 
 
-                for(int j = 1; j <= TOTAL_NODE_NUM; j++){
-                    //if(j != destinationNode) { //new
-                        SendModuleActionMessage(
-                            MessageType::MODULE_TRIGGER_ACTION,
-                            j,
-                            (u8)NodeModuleTriggerActionMessages::HOP_COUNT,
-                            0,
-                            nullptr,
-                            0,
-                            false
-                        );
-                    //}
-                }
+                SendModuleActionMessage(
+                    MessageType::MODULE_TRIGGER_ACTION,
+                    1,
+                    (u8)NodeModuleTriggerActionMessages::HOP_COUNT,
+                    1,
+                    nullptr,
+                    0,
+                    false
+                );
                 return TerminalCommandHandlerReturnType::SUCCESS;
             }
             //new command: let many nodes generate load

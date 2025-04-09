@@ -152,7 +152,7 @@ private:
             REMOVE_DYNAMIC_GROUP             = 10,
             CLEAR_DYNAMIC_GROUPS             = 11,
             GET_DYNAMIC_GROUPS               = 12,
-            GET_HOPS_TO_SINK                 = 13, //new
+            GET_HOPS_TO_SINK                 = 13,
         };
 
         #pragma pack(push, 1)

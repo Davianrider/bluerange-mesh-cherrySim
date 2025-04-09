@@ -290,7 +290,7 @@ SimConfiguration CherrySimRunner::CreateDefaultSimConfiguration()
 {
     SimConfiguration simConfig;
 
-    simConfig.seed = 117;
+    simConfig.seed = 10;
     simConfig.mapWidthInMeters = 30;
     simConfig.mapHeightInMeters = 30;
     simConfig.mapElevationInMeters = 1;

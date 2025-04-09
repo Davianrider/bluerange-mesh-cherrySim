@@ -704,6 +704,9 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
                 handshakeFailCode = LiveReportHandshakeFailCode::SAME_CLUSTERID;
             }
             //PART 2: This is more probable, he's in a different cluster
+            // //original code
+            // else if (packet->payload.clusterSize < clusterSizeBackup)
+            // //new:add "&& packet->payload.deviceType != DeviceType::SINK"
             else if (packet->payload.clusterSize < clusterSizeBackup && packet->payload.deviceType != DeviceType::SINK)
             {
                 //I am the bigger cluster
