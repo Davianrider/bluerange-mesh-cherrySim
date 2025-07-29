@@ -2090,7 +2090,7 @@ void Node::UpdateJoinMePacket()
 
     //test mesh finish time
 
-    if(clusterSize == 11){
+    if(clusterSize == 31){
         trace("##############test mesh finish time##############"EOL);
         trace("Delaytimer : %u Utc : %u " EOL, GS->delaytimer, GS->timeManager.GetUtcTime());
         trace("##############test mesh finish time##############"EOL);
@@ -2518,7 +2518,10 @@ u32 Node::CalculateClusterScoreAsMaster(const joinMeBufferPacket& packet) const
 
 
     //new: add sink node weight score
-    u32 score =  (u32)(packet.payload.freeMeshOutConnections) + rssiScore - (u32)(packet.payload.hopsToSink) * 1000;
+    // u32 score =  (u32)(packet.payload.freeMeshOutConnections) + rssiScore - (u32)(packet.payload.hopsToSink) * 1000;
+
+    u32 score =  (u32)(packet.payload.freeMeshOutConnections) + rssiScore;
+
     // //test score
     // // check device type
 	// u8 isSink = 0;
@@ -2557,7 +2560,7 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
     ErrorType err = FruityHal::GetDeviceConfiguration(config);
     DeviceType deviceType;
     if (err == ErrorType::SUCCESS)
-    deviceType = static_cast<DeviceType>(config.deviceType);
+    deviceType = static_cast<DeviceType>(config.deviceType); 
     
     if (deviceType == DeviceType::SINK) return 0;
 
@@ -2598,7 +2601,9 @@ u32 Node::CalculateClusterScoreAsSlave(const joinMeBufferPacket& packet) const
     // //original code
     // score += (u32)(packet.payload.clusterSize) * 10000 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
     //new: add tree balance code
-    score += (u32)(packet.payload.hopsToSink) * 1000 + (u32)(packet.payload.clusterSize) * 100 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
+    // score += (u32)(packet.payload.hopsToSink) * 1000 + (u32)(packet.payload.clusterSize) * 100 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
+
+    score += (u32)(packet.payload.clusterSize) * 100 + (u32)(packet.payload.freeMeshOutConnections) * 100 + rssiScore;
 
     // u32 score = 0;
 	// if(nodeType == DeviceType::SINK)

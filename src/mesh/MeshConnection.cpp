@@ -646,12 +646,19 @@ void MeshConnection::StartHandshakeAfterMtuExchange()
     //Now we set the hop counter to the closest sink
     packet.payload.hopsToSink = GS->cm.GetMeshHopsToShortestSink(this);
 
+    if (packet.payload.hopsToSink < 0 || packet.payload.hopsToSink == 65535) {
+        
     packet.payload.preferredConnectionInterval = 0; //Unused at the moment
     packet.payload.networkId = GS->node.configuration.networkId;
+    GS->cm.ForceDisconnectOtherMeshConnections(this, AppDisconnectReason::I_AM_SMALLER);
+    // logt("HANDSHAKE", "OUT => conn(%u) CLUSTER_WELCOME, cID:%x, cSize:%d, hops:%d", connectionId, packet.payload.clusterId, packet.payload.clusterSize, packet.payload.hopsToSink);
 
-    logt("HANDSHAKE", "OUT => conn(%u) CLUSTER_WELCOME, cID:%x, cSize:%d, hops:%d", connectionId, packet.payload.clusterId, packet.payload.clusterSize, packet.payload.hopsToSink);
-
-    SendHandshakeMessage((u8*) &packet, SIZEOF_CONN_PACKET_CLUSTER_WELCOME_WITH_NETWORK_ID, true);
+    // SendHandshakeMessage((u8*) &packet, SIZEOF_CONN_PACKET_CLUSTER_WELCOME_WITH_NETWORK_ID, true);
+    }else {
+        logt("HANDSHAKE", "OUT => conn(%u) CLUSTER_WELCOME, cID:%x, cSize:%d, hops:%d", connectionId, packet.payload.clusterId, packet.payload.clusterSize, packet.payload.hopsToSink);
+        
+        SendHandshakeMessage((u8*) &packet, SIZEOF_CONN_PACKET_CLUSTER_WELCOME, true);
+    }
 }
 
 void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendData, u8 const * data)
@@ -693,8 +700,8 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
 
 
             logt("HANDSHAKE", "IN <= %d CLUSTER_WELCOME clustID:%x, clustSize:%d, toSink:%d", packet->header.sender, packet->payload.clusterId, packet->payload.clusterSize, packet->payload.hopsToSink);
-
             
+
             //PART 1: We do have the same cluster ID. Ouuups, should not have happened, run Forest!
             if (packet->payload.clusterId == clusterIDBackup)
             {
@@ -707,7 +714,7 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
             // //original code
             // else if (packet->payload.clusterSize < clusterSizeBackup)
             // //new:add "&& packet->payload.deviceType != DeviceType::SINK"
-            else if (packet->payload.clusterSize < clusterSizeBackup && packet->payload.deviceType != DeviceType::SINK)
+            else if (packet->payload.clusterSize < clusterSizeBackup && (packet->payload.hopsToSink < 0 || packet->payload.hopsToSink == 65535))
             {
                 //I am the bigger cluster
                 logt("HANDSHAKE", "I am bigger %d vs %d", packet->payload.clusterSize, clusterSizeBackup);
@@ -718,7 +725,7 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
                     DisconnectAndRemove(AppDisconnectReason::WRONG_DIRECTION);
                     
                     handshakeFailCode = LiveReportHandshakeFailCode::WRONG_DIRECTION;
-                }
+            }
 
             }
 
@@ -742,7 +749,7 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
 
                 handshakeFailCode = LiveReportHandshakeFailCode::UNPREFERRED_CONNECTION;
             }
-            
+        
             else
             {
 
@@ -751,7 +758,7 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
 
                 //Update my own information on the connection
                 this->partnerId = packet->header.sender;
-
+                
                 //Send an update to the connected cluster to increase the size by one
                 //This is also the ACK message for our connecting node
                 ConnPacketClusterAck1 outPacket;
@@ -768,7 +775,7 @@ void MeshConnection::ReceiveHandshakePacketHandler(BaseConnectionSendData* sendD
                 
                 //Kill other Connections and check if this connection has been removed in the process
                 GS->cm.ForceDisconnectOtherMeshConnections(this, AppDisconnectReason::I_AM_SMALLER);
-
+                
                 //Because we forcefully killed our connections, we are back at square 1
                 //These values will be overwritten by the ACK2 packet that we receive from out partner
                 //But if we do never receive an ACK2, this is our new starting point
