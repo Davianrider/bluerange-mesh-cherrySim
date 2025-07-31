@@ -645,12 +645,17 @@ void MeshConnection::StartHandshakeAfterMtuExchange()
 
     //Now we set the hop counter to the closest sink
     packet.payload.hopsToSink = GS->cm.GetMeshHopsToShortestSink(this);
+    
+    packet.payload.preferredConnectionInterval = 0; //Unused at the moment
+    packet.payload.networkId = GS->node.configuration.networkId;
 
     if (packet.payload.hopsToSink < 0 || packet.payload.hopsToSink == 65535) {
         
-    packet.payload.preferredConnectionInterval = 0; //Unused at the moment
-    packet.payload.networkId = GS->node.configuration.networkId;
     GS->cm.ForceDisconnectOtherMeshConnections(this, AppDisconnectReason::I_AM_SMALLER);
+
+    GS->node.SetClusterSize(1);
+    GS->node.clusterId = GS->node.GenerateClusterID();
+
     // logt("HANDSHAKE", "OUT => conn(%u) CLUSTER_WELCOME, cID:%x, cSize:%d, hops:%d", connectionId, packet.payload.clusterId, packet.payload.clusterSize, packet.payload.hopsToSink);
 
     // SendHandshakeMessage((u8*) &packet, SIZEOF_CONN_PACKET_CLUSTER_WELCOME_WITH_NETWORK_ID, true);
