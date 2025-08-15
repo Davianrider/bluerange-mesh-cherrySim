@@ -651,10 +651,10 @@ void MeshConnection::StartHandshakeAfterMtuExchange()
 
     if (packet.payload.hopsToSink < 0 || packet.payload.hopsToSink == 65535) {
         
-    GS->cm.ForceDisconnectOtherMeshConnections(this, AppDisconnectReason::I_AM_SMALLER);
+        GS->cm.ForceDisconnectOtherMeshConnections(this, AppDisconnectReason::I_AM_SMALLER);
 
-    GS->node.SetClusterSize(1);
-    GS->node.clusterId = GS->node.GenerateClusterID();
+        GS->node.SetClusterSize(1);
+        GS->node.clusterId = GS->node.GenerateClusterID();
 
     // logt("HANDSHAKE", "OUT => conn(%u) CLUSTER_WELCOME, cID:%x, cSize:%d, hops:%d", connectionId, packet.payload.clusterId, packet.payload.clusterSize, packet.payload.hopsToSink);
 
